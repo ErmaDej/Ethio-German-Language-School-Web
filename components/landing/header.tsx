@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Menu, X } from "lucide-react"
 import { useState, useEffect } from "react"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import { useLanguage } from "@/lib/hooks/use-language"
@@ -95,6 +95,10 @@ export function Header() {
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] dark:bg-gray-950 dark:border-gray-800 p-0">
+              <div className="sr-only">
+                <SheetTitle>{t.schoolName}</SheetTitle>
+                <SheetDescription>Mobile navigation menu for {t.schoolName}</SheetDescription>
+              </div>
               <div className="flex flex-col h-full">
                 <div className="p-6 border-b dark:border-gray-800 flex items-center justify-between">
                   <span className="font-bold text-blue-600 dark:text-blue-400">{t.schoolName}</span>

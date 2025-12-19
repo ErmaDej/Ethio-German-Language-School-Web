@@ -293,6 +293,8 @@ export const translations = {
     complete: "complete",
     due: "Due",
     animatedSlogan: "Words are bridges to new worlds",
+    meetOurTeam: "Meet Our Dedicated Team",
+    teamSubtitle: "Our team of certified professionals is committed to providing the highest quality German language education in Ethiopia.",
   },
   de: {
     // Navigation
@@ -590,6 +592,8 @@ export const translations = {
     complete: "abgeschlossen",
     due: "Fällig",
     animatedSlogan: "Worte sind Brücken zu neuen Welten",
+    meetOurTeam: "Lernen Sie unser engagiertes Team kennen",
+    teamSubtitle: "Unser Team aus zertifizierten Fachkräften setzt sich dafür ein, die hochwertigste Deutschsprachausbildung in Äthiopien anzubieten.",
   },
   am: {
     // Navigation
@@ -866,6 +870,8 @@ export const translations = {
     complete: "ተጠናቋል",
     due: "ቀነ-ገደብ",
     animatedSlogan: "ቃላት ወደ አዲስ ዓለማት የሚወስዱ ድልድዮች ናቸው",
+    meetOurTeam: "የተሰጡ የቡድን አባሎቻችንን ያግኙ",
+    teamSubtitle: "የእኛ የምስክር ወረቀት ያላቸው ባለሙያዎች ቡድን በኢትዮጵያ ውስጥ ከፍተኛ ጥራት ያለው የጀርመንኛ ቋንቋ ትምህርት ለመስጠት ቁርጠኛ ነው።",
   },
 }
 

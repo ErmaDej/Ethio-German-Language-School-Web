@@ -192,7 +192,7 @@ export default function AboutPage() {
                 viewport={{ once: true }}
                 className="text-4xl font-black text-gray-900 dark:text-white mb-4 tracking-tight"
               >
-                Meet Our Dedicated Team
+                {t.meetOurTeam}
               </motion.h2>
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
@@ -201,7 +201,7 @@ export default function AboutPage() {
                 transition={{ delay: 0.1 }}
                 className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto font-medium"
               >
-                Our team of certified professionals is committed to providing the highest quality German language education in Ethiopia.
+                {t.teamSubtitle}
               </motion.p>
             </div>
 
