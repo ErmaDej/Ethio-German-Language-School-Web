@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
 import { ScheduleForm } from "@/components/admin/schedule-form"
 import { useLanguage } from "@/lib/hooks/use-language"
@@ -29,7 +30,9 @@ export default function CreateSchedulePage() {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5, delay: 0.1 }}
                 >
-                    <ScheduleForm />
+                    <Suspense fallback={<div className="h-96 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-xl" />}>
+                        <ScheduleForm />
+                    </Suspense>
                 </motion.div>
             </div>
         </DashboardLayout>
