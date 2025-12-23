@@ -12,7 +12,12 @@ import { motion } from "framer-motion"
 
 export default function CoursesPage() {
   const [courses, setCourses] = useState<any[]>([])
+  const [filteredCourses, setFilteredCourses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [filters, setFilters] = useState({
+    deliveryMethod: [] as string[],
+    level: [] as string[],
+  })
   const { language } = useLanguage()
   const t = translations[language]
 
@@ -29,12 +34,38 @@ export default function CoursesPage() {
         console.error("Error fetching courses:", error)
       } else {
         setCourses(data || [])
+        setFilteredCourses(data || [])
       }
       setLoading(false)
     }
 
     fetchCourses()
   }, [])
+
+  useEffect(() => {
+    let result = courses
+
+    if (filters.deliveryMethod.length > 0) {
+      result = result.filter((course) => filters.deliveryMethod.includes(course.delivery_method))
+    }
+
+    if (filters.level.length > 0) {
+      result = result.filter((course) => filters.level.includes(course.level))
+    }
+
+    setFilteredCourses(result)
+  }, [filters, courses])
+
+  const handleFilterChange = (category: string, value: string) => {
+    setFilters((prev: any) => {
+      const current = prev[category]
+      const next = current.includes(value)
+        ? current.filter((v: string) => v !== value)
+        : [...current, value]
+
+      return { ...prev, [category]: next }
+    })
+  }
 
   const fadeIn = {
     initial: { opacity: 0, y: 20 },
@@ -68,7 +99,7 @@ export default function CoursesPage() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.5, delay: 0.2 }}
                 >
-                  <CourseFilters />
+                  <CourseFilters filters={filters} onFilterChange={handleFilterChange} />
                 </motion.div>
               </aside>
               <div className="flex-1">
@@ -79,7 +110,7 @@ export default function CoursesPage() {
                     ))}
                   </div>
                 ) : (
-                  <CourseGrid courses={courses} />
+                  <CourseGrid courses={filteredCourses} />
                 )}
               </div>
             </div>

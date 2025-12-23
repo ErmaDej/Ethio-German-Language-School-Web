@@ -40,14 +40,24 @@ export default function LoginPage() {
       const {
         data: { user },
       } = await supabase.auth.getUser()
-      const role = user?.user_metadata?.role || "student"
 
-      if (role === "admin") {
-        router.push("/admin")
-      } else if (role === "instructor") {
-        router.push("/instructor")
-      } else {
-        router.push("/student")
+      if (user) {
+        // Fetch role from profiles table which is the source of truth
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single()
+
+        const role = profile?.role || "student"
+
+        if (role === "admin") {
+          router.push("/admin")
+        } else if (role === "instructor") {
+          router.push("/instructor")
+        } else {
+          router.push("/student")
+        }
       }
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred")

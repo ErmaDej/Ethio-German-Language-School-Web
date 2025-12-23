@@ -1,162 +1,215 @@
-import { requireRole } from "@/lib/auth"
-import { createClient } from "@/lib/supabase/server"
+"use client"
+
+import { createClient } from "@/lib/supabase/client"
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { BookOpen, Users, FileText, Calendar } from "lucide-react"
+import { BookOpen, Users, FileText, Calendar, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { useEffect, useState } from "react"
+import { useLanguage } from "@/lib/hooks/use-language"
+import { translations } from "@/lib/i18n/translations"
+import { motion } from "framer-motion"
 
-export default async function InstructorDashboard() {
-  const profile = await requireRole(["instructor"])
-  const supabase = await createClient()
+export default function InstructorDashboard() {
+  const [profile, setProfile] = useState<any>(null)
+  const [schedules, setSchedules] = useState<any[]>([])
+  const [assignments, setAssignments] = useState<any[]>([])
+  const [totalStudents, setTotalStudents] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
+  const { language } = useLanguage()
+  const t = translations[language]
+  const supabase = createClient()
 
-  // Get instructor's courses
-  const { data: schedules } = await supabase
-    .from("course_schedules")
-    .select(
-      `
-      *,
-      course:courses(*),
-      enrollments:enrollments(count)
-    `,
+  useEffect(() => {
+    async function fetchData() {
+      setIsLoading(true)
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single()
+
+        setProfile(profileData)
+
+        // Get instructor's courses
+        const { data: schedulesData } = await supabase
+          .from("course_schedules")
+          .select(`
+            *,
+            course:courses(*)
+          `)
+          .eq("instructor_id", user.id)
+
+        setSchedules(schedulesData || [])
+
+        if (schedulesData && schedulesData.length > 0) {
+          const scheduleIds = schedulesData.map((s) => s.id)
+
+          // Get total students
+          const { count } = await supabase
+            .from("enrollments")
+            .select("*", { count: "exact", head: true })
+            .in("schedule_id", scheduleIds)
+            .eq("enrollment_status", "confirmed")
+
+          setTotalStudents(count || 0)
+
+          // Get assignments
+          const { data: assignmentsData } = await supabase
+            .from("assignments")
+            .select("*")
+            .in("schedule_id", scheduleIds)
+            .order("due_date", { ascending: true })
+            .limit(10)
+
+          setAssignments(assignmentsData || [])
+        }
+      } catch (error) {
+        console.error("Error fetching instructor data:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [supabase])
+
+  if (isLoading) {
+    return (
+      <DashboardLayout role="instructor">
+        <div className="flex h-[60vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        </div>
+      </DashboardLayout>
     )
-    .eq("instructor_id", profile.id)
+  }
 
-  const activeSchedules = schedules?.filter((s) => s.status === "ongoing") || []
-
-  // Get total students across all courses
-  const { count: totalStudents } = await supabase
-    .from("enrollments")
-    .select("*", { count: "exact", head: true })
-    .in("schedule_id", schedules?.map((s) => s.id) || [])
-    .eq("enrollment_status", "confirmed")
-
-  // Get assignments
-  const { data: assignments } = await supabase
-    .from("assignments")
-    .select("*")
-    .in("schedule_id", schedules?.map((s) => s.id) || [])
+  const activeSchedules = schedules.filter((s) => s.status === "ongoing" || s.status === "upcoming")
 
   return (
     <DashboardLayout role="instructor">
       <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Welcome, {profile.full_name}!</h1>
-          <p className="text-muted-foreground mt-2">Manage your courses and students</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <h1 className="text-3xl font-bold tracking-tight dark:text-white">
+            {t.welcomeBack}, {profile?.full_name}!
+          </h1>
+          <p className="text-muted-foreground mt-2 dark:text-gray-400">{t.manageYourCourses}</p>
+        </motion.div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Active Courses</CardTitle>
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{activeSchedules.length}</div>
-              <p className="text-xs text-muted-foreground">Currently teaching</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalStudents || 0}</div>
-              <p className="text-xs text-muted-foreground">Enrolled students</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Assignments</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{assignments?.length || 0}</div>
-              <p className="text-xs text-muted-foreground">Created assignments</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">All Schedules</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{schedules?.length || 0}</div>
-              <p className="text-xs text-muted-foreground">Total schedules</p>
-            </CardContent>
-          </Card>
+          {[
+            { title: t.activeCourses, value: activeSchedules.length, sub: t.currentlyTeaching, icon: BookOpen },
+            { title: t.students, value: totalStudents, sub: t.enrolledStudents, icon: Users },
+            { title: t.assignments, value: assignments.length, sub: t.createdAssignments, icon: FileText },
+            { title: t.allSchedules, value: schedules.length, sub: t.totalSchedulesLabel, icon: Calendar },
+          ].map((stat, i) => (
+            <motion.div
+              key={stat.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: i * 0.1 }}
+            >
+              <Card className="dark:bg-gray-900 dark:border-gray-800">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium dark:text-gray-300">{stat.title}</CardTitle>
+                  <stat.icon className="h-4 w-4 text-muted-foreground dark:text-gray-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold dark:text-white">{stat.value}</div>
+                  <p className="text-xs text-muted-foreground dark:text-gray-400">{stat.sub}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>My Courses</CardTitle>
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/instructor/courses">View All</Link>
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {activeSchedules.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">No active courses</p>
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
+            <Card className="dark:bg-gray-900 dark:border-gray-800 h-full">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="dark:text-white">{t.myCourses}</CardTitle>
+                  <Button asChild variant="outline" size="sm" className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">
+                    <Link href="/instructor/courses">{t.viewAll}</Link>
+                  </Button>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {activeSchedules.slice(0, 3).map((schedule: any) => (
-                    <div key={schedule.id} className="flex items-center justify-between border-b pb-4 last:border-0">
-                      <div className="flex-1">
-                        <p className="font-medium">{schedule.course.title.en}</p>
-                        <p className="text-sm text-muted-foreground">{schedule.available_seats} seats available</p>
+              </CardHeader>
+              <CardContent>
+                {activeSchedules.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground dark:text-gray-400">{t.noActiveCourses}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {activeSchedules.slice(0, 5).map((schedule: any) => (
+                      <div key={schedule.id} className="flex items-center justify-between border-b dark:border-gray-800 pb-4 last:border-0">
+                        <div className="flex-1">
+                          <p className="font-medium dark:text-gray-200">{schedule.course.title[language] || schedule.course.title.en}</p>
+                          <p className="text-sm text-muted-foreground dark:text-gray-400">{schedule.available_seats} {t.seatsLeft}</p>
+                        </div>
+                        <Button asChild variant="ghost" size="sm" className="dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800">
+                          <Link href={`/instructor/courses/${schedule.id}`}>{t.view}</Link>
+                        </Button>
                       </div>
-                      <Button asChild variant="ghost" size="sm">
-                        <Link href={`/instructor/courses/${schedule.id}`}>View</Link>
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Recent Assignments</CardTitle>
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/instructor/assignments">View All</Link>
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {!assignments || assignments.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">No assignments yet</p>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+          >
+            <Card className="dark:bg-gray-900 dark:border-gray-800 h-full">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="dark:text-white">{t.recentAssignments}</CardTitle>
+                  <Button asChild variant="outline" size="sm" className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">
+                    <Link href="/instructor/assignments">{t.viewAll}</Link>
+                  </Button>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {assignments.slice(0, 3).map((assignment: any) => (
-                    <div key={assignment.id} className="flex items-center justify-between border-b pb-4 last:border-0">
-                      <div className="flex-1">
-                        <p className="font-medium">{assignment.title.en}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Due: {new Date(assignment.due_date).toLocaleDateString()}
-                        </p>
+              </CardHeader>
+              <CardContent>
+                {assignments.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground dark:text-gray-400">{t.noUpcomingAssignments}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {assignments.slice(0, 5).map((assignment: any) => (
+                      <div key={assignment.id} className="flex items-center justify-between border-b dark:border-gray-800 pb-4 last:border-0">
+                        <div className="flex-1">
+                          <p className="font-medium dark:text-gray-200">{assignment.title[language] || assignment.title.en}</p>
+                          <p className="text-sm text-muted-foreground dark:text-gray-400">
+                            {t.due}: {new Date(assignment.due_date).toLocaleDateString(language === 'am' ? 'am-ET' : language === 'de' ? 'de-DE' : 'en-US')}
+                          </p>
+                        </div>
+                        <Button asChild variant="ghost" size="sm" className="dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800">
+                          <Link href={`/instructor/assignments/${assignment.id}`}>{t.view}</Link>
+                        </Button>
                       </div>
-                      <Button asChild variant="ghost" size="sm">
-                        <Link href={`/instructor/assignments/${assignment.id}`}>View</Link>
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
       </div>
     </DashboardLayout>

@@ -6,6 +6,7 @@ import { BookOpen, Clock, DollarSign, Globe, TrendingUp, Users } from "lucide-re
 import { useLanguage } from "@/lib/hooks/use-language"
 import { translations } from "@/lib/i18n/translations"
 import { motion } from "framer-motion"
+import { getLevelColor, getLevelLabel } from "@/lib/utils"
 
 interface CourseDetailsProps {
   course: {
@@ -23,29 +24,6 @@ interface CourseDetailsProps {
 export function CourseDetails({ course }: CourseDetailsProps) {
   const { language } = useLanguage()
   const t = translations[language]
-
-  const getLevelColor = (level: string) => {
-    switch (level.toLowerCase()) {
-      case "beginner":
-      case "a1":
-        return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-      case "elementary":
-      case "a2":
-        return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-      case "intermediate":
-      case "b1":
-        return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-      case "upper_intermediate":
-      case "b2":
-        return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
-      case "advanced":
-      case "c1":
-      case "c2":
-        return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-      default:
-        return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400"
-    }
-  }
 
   const container = {
     hidden: { opacity: 0 },
@@ -70,7 +48,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
         transition={{ duration: 0.5 }}
       >
         <div className="flex items-center gap-3 mb-4">
-          <Badge className={getLevelColor(course.level)}>{course.level}</Badge>
+          <Badge className={getLevelColor(course.level)}>{getLevelLabel(course.level, t)}</Badge>
           <Badge variant="outline" className="dark:border-gray-700 dark:text-gray-300">
             {course.language_taught === "de" ? t.german : t.amharic}
           </Badge>
@@ -78,9 +56,11 @@ export function CourseDetails({ course }: CourseDetailsProps) {
         <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white mb-4">
           {course.title[language] || course.title.en}
         </h1>
-        <p className="text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
-          {course.description[language] || course.description.en}
-        </p>
+        <div className="prose prose-blue dark:prose-invert max-w-none">
+          <p className="text-lg text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">
+            {course.description[language] || course.description.en}
+          </p>
+        </div>
       </motion.div>
 
       <motion.div
@@ -97,7 +77,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                   <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{t.durationLabel}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">{t.durationLabel}</p>
                   <p className="text-lg font-semibold dark:text-white">
                     {course.duration_weeks} {t.weeks}
                   </p>
@@ -115,7 +95,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                   <TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{t.timeCommitment}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">{t.timeCommitment}</p>
                   <p className="text-lg font-semibold dark:text-white">
                     {course.hours_per_week} {t.hoursPerWeek}
                   </p>
@@ -133,8 +113,13 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                   <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{t.price}</p>
-                  <p className="text-lg font-semibold dark:text-white">${course.price_usd}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">{t.priceMonthly || "Price / Month"}</p>
+                  <div className="flex flex-col">
+                    <p className="text-lg font-semibold dark:text-white">{course.price_usd.toLocaleString()} ETB</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {t.priceTotal || "Total"}: {(course.price_usd * (course.duration_weeks / 4)).toLocaleString()} ETB
+                    </p>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -149,7 +134,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                   <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{t.classSize}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">{t.classSize}</p>
                   <p className="text-lg font-semibold dark:text-white">
                     {t.maxStudents.replace("{count}", course.max_students.toString())}
                   </p>
@@ -167,7 +152,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                   <Globe className="h-5 w-5 text-pink-600 dark:text-pink-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{t.language}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">{t.language}</p>
                   <p className="text-lg font-semibold dark:text-white">
                     {course.language_taught === "de" ? t.german : t.amharic}
                   </p>
@@ -185,8 +170,8 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                   <BookOpen className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{t.levelLabel}</p>
-                  <p className="text-lg font-semibold dark:text-white capitalize">{course.level}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">{t.levelLabel}</p>
+                  <p className="text-lg font-semibold dark:text-white">{getLevelLabel(course.level, t)}</p>
                 </div>
               </div>
             </CardContent>
@@ -196,4 +181,3 @@ export function CourseDetails({ course }: CourseDetailsProps) {
     </div>
   )
 }
-

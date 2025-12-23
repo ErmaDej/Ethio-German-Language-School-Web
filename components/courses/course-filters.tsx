@@ -7,9 +7,32 @@ import { Separator } from "@/components/ui/separator"
 import { useLanguage } from "@/lib/hooks/use-language"
 import { translations } from "@/lib/i18n/translations"
 
-export function CourseFilters() {
+interface CourseFiltersProps {
+  filters: {
+    deliveryMethod: string[]
+    level: string[]
+  }
+  onFilterChange: (category: string, value: string) => void
+}
+
+export function CourseFilters({ filters, onFilterChange }: CourseFiltersProps) {
   const { language } = useLanguage()
   const t = translations[language]
+
+  const levels = [
+    { id: "beginner", label: t.completeBeginner },
+    { id: "elementary", label: t.elementary },
+    { id: "intermediate", label: t.intermediate },
+    { id: "upper_intermediate", label: t.upperIntermediate },
+    { id: "advanced", label: t.advanced },
+    { id: "proficient", label: t.mastery },
+  ]
+
+  const deliveryMethods = [
+    { id: "online", label: t.onlineClasses },
+    { id: "onsite", label: t.onsiteAddis },
+    { id: "one-to-one", label: t.oneToOneTutoringLabel },
+  ]
 
   return (
     <Card className="dark:bg-gray-900 dark:border-gray-800">
@@ -20,44 +43,16 @@ export function CourseFilters() {
         <div>
           <Label className="text-base font-semibold mb-3 block dark:text-gray-200">{t.deliveryMethod}</Label>
           <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <Checkbox id="online" className="dark:border-gray-700" />
-              <label htmlFor="online" className="text-sm font-medium cursor-pointer dark:text-gray-400">
-                {t.onlineClasses}
-              </label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox id="onsite" className="dark:border-gray-700" />
-              <label htmlFor="onsite" className="text-sm font-medium cursor-pointer dark:text-gray-400">
-                {t.onsiteAddis}
-              </label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox id="one-to-one" className="dark:border-gray-700" />
-              <label htmlFor="one-to-one" className="text-sm font-medium cursor-pointer dark:text-gray-400">
-                {t.oneToOneTutoringLabel}
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <Separator className="dark:bg-gray-800" />
-
-        <div>
-          <Label className="text-base font-semibold mb-3 block dark:text-gray-200">{t.cefrLevel}</Label>
-          <div className="space-y-2">
-            {[
-              { id: "a1", label: "A1 (Beginner)" },
-              { id: "a2", label: "A2 (Elementary)" },
-              { id: "b1", label: "B1 (Intermediate)" },
-              { id: "b2", label: "B2 (Upper-Intermediate)" },
-              { id: "c1", label: "C1 (Advanced)" },
-              { id: "c2", label: "C2 (Mastery)" },
-            ].map((level) => (
-              <div key={level.id} className="flex items-center space-x-2">
-                <Checkbox id={level.id} className="dark:border-gray-700" />
-                <label htmlFor={level.id} className="text-sm font-medium cursor-pointer dark:text-gray-400">
-                  {level.label}
+            {deliveryMethods.map((method) => (
+              <div key={method.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={method.id}
+                  className="dark:border-gray-700"
+                  checked={filters.deliveryMethod.includes(method.id)}
+                  onCheckedChange={() => onFilterChange("deliveryMethod", method.id)}
+                />
+                <label htmlFor={method.id} className="text-sm font-medium cursor-pointer dark:text-gray-400">
+                  {method.label}
                 </label>
               </div>
             ))}
@@ -67,26 +62,21 @@ export function CourseFilters() {
         <Separator className="dark:bg-gray-800" />
 
         <div>
-          <Label className="text-base font-semibold mb-3 block dark:text-gray-200">{t.durationLabel}</Label>
+          <Label className="text-base font-semibold mb-3 block dark:text-gray-200">{t.cefrLevel}</Label>
           <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <Checkbox id="short" className="dark:border-gray-700" />
-              <label htmlFor="short" className="text-sm font-medium cursor-pointer dark:text-gray-400">
-                8-12 {t.weeks}
-              </label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox id="medium" className="dark:border-gray-700" />
-              <label htmlFor="medium" className="text-sm font-medium cursor-pointer dark:text-gray-400">
-                13-16 {t.weeks}
-              </label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox id="long" className="dark:border-gray-700" />
-              <label htmlFor="long" className="text-sm font-medium cursor-pointer dark:text-gray-400">
-                17+ {t.weeks}
-              </label>
-            </div>
+            {levels.map((level) => (
+              <div key={level.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={level.id}
+                  className="dark:border-gray-700"
+                  checked={filters.level.includes(level.id)}
+                  onCheckedChange={() => onFilterChange("level", level.id)}
+                />
+                <label htmlFor={level.id} className="text-sm font-medium cursor-pointer dark:text-gray-400">
+                  {level.label}
+                </label>
+              </div>
+            ))}
           </div>
         </div>
       </CardContent>

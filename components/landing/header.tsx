@@ -1,20 +1,32 @@
 "use client"
 
+/* eslint-disable @next/next/no-img-element */
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Menu, X } from "lucide-react"
+import { Menu, X, LogOut, LayoutDashboard, User } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 import { useLanguage } from "@/lib/hooks/use-language"
 import { translations } from "@/lib/i18n/translations"
+import { useUser } from "@/lib/hooks/use-user"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const { language } = useLanguage()
   const t = translations[language]
+  const { user, profile, loading, signOut } = useUser()
 
   useEffect(() => {
     setMounted(true)
@@ -79,12 +91,57 @@ export function Header() {
           </div>
 
           <div className="hidden md:flex items-center gap-3 ml-2">
-            <Button asChild variant="ghost" className="font-semibold text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">
-              <Link href="/auth/login">{t.signIn}</Link>
-            </Button>
-            <Button asChild className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white font-bold shadow-md shadow-blue-600/20 hover:shadow-lg hover:shadow-blue-600/30 transition-all">
-              <Link href="/auth/sign-up">{t.getStarted}</Link>
-            </Button>
+            {loading ? (
+              <div className="h-9 w-24 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-md" />
+            ) : user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full border dark:border-gray-700">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={profile?.avatar_url} alt={profile?.full_name} />
+                      <AvatarFallback className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 font-bold">
+                        {profile?.full_name?.charAt(0) || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{profile?.full_name}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{profile?.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href={profile?.role ? `/${profile.role}` : '/student'} className="cursor-pointer">
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      <span>{t.dashboard}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href={profile?.role ? `/${profile.role}/profile` : '/student/profile'} className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>{t.profile}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut} className="text-red-600 dark:text-red-400 cursor-pointer">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>{t.signIn ? "Sign Out" : "Sign Out"}</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Button asChild variant="ghost" className="font-semibold text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800">
+                  <Link href="/auth/login">{t.signIn}</Link>
+                </Button>
+                <Button asChild className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white font-bold shadow-md shadow-blue-600/20 hover:shadow-lg hover:shadow-blue-600/30 transition-all">
+                  <Link href="/auth/sign-up">{t.getStarted}</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -127,12 +184,42 @@ export function Header() {
                       <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t.language}</span>
                       <LanguageSwitcher />
                     </div>
-                    <Button asChild variant="outline" className="w-full mt-4 font-bold border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-200">
-                      <Link href="/auth/login" onClick={() => setIsOpen(false)}>{t.signIn}</Link>
-                    </Button>
-                    <Button asChild className="w-full font-bold bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white">
-                      <Link href="/auth/sign-up" onClick={() => setIsOpen(false)}>{t.getStarted}</Link>
-                    </Button>
+
+                    {user ? (
+                      <>
+                        <div className="py-2 border-t dark:border-gray-800 mt-2">
+                          <div className="flex items-center gap-3 mb-4">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={profile?.avatar_url} />
+                              <AvatarFallback>{profile?.full_name?.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{profile?.full_name}</p>
+                              <p className="text-xs text-muted-foreground">{profile?.email}</p>
+                            </div>
+                          </div>
+                          <Button asChild variant="outline" className="w-full justify-start mb-2">
+                            <Link href={profile?.role ? `/${profile.role}` : '/student'} onClick={() => setIsOpen(false)}>
+                              <LayoutDashboard className="mr-2 h-4 w-4" />
+                              {t.dashboard}
+                            </Link>
+                          </Button>
+                          <Button variant="ghost" className="w-full justify-start text-red-600" onClick={() => { signOut(); setIsOpen(false); }}>
+                            <LogOut className="mr-2 h-4 w-4" />
+                            Sign Out
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <Button asChild variant="outline" className="w-full mt-4 font-bold border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-200">
+                          <Link href="/auth/login" onClick={() => setIsOpen(false)}>{t.signIn}</Link>
+                        </Button>
+                        <Button asChild className="w-full font-bold bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white">
+                          <Link href="/auth/sign-up" onClick={() => setIsOpen(false)}>{t.getStarted}</Link>
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </nav>
               </div>

@@ -1,56 +1,51 @@
 "use client"
 
+/* eslint-disable @next/next/no-img-element */
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { Clock, Users, TrendingUp, ChevronRight } from "lucide-react"
+import { Clock, Users, TrendingUp, ChevronRight, Loader2 } from "lucide-react"
 import { useLanguage } from "@/lib/hooks/use-language"
 import { translations } from "@/lib/i18n/translations"
 import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 
 export function CoursesSection() {
   const { language } = useLanguage()
   const t = translations[language]
   const [mounted, setMounted] = useState(false)
+  const [courses, setCourses] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     setMounted(true)
+    async function fetchFeaturedCourses() {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from("courses")
+        .select("*")
+        .eq("is_active", true)
+        .order("level", { ascending: true }) // Show beginner levels first on landing page
+        .limit(3)
+
+      if (data) {
+        setCourses(data)
+      }
+      setLoading(false)
+    }
+    fetchFeaturedCourses()
   }, [])
 
-  const courses = [
-    {
-      id: "1",
-      title: t.featuredCourseA1Title,
-      description: t.featuredCourseA1Desc,
-      level: "A1",
-      duration: `12 ${t.weeks}`,
-      students: 45,
-      price: "$299",
-      color: "from-blue-500 to-blue-600",
-    },
-    {
-      id: "2",
-      title: t.featuredCourseA2Title,
-      description: t.featuredCourseA2Desc,
-      level: "A2",
-      duration: `12 ${t.weeks}`,
-      students: 38,
-      price: "$329",
-      color: "from-blue-600 to-blue-700",
-    },
-    {
-      id: "3",
-      title: t.featuredCourseB1Title,
-      description: t.featuredCourseB1Desc,
-      level: "B1",
-      duration: `14 ${t.weeks}`,
-      students: 32,
-      price: "$379",
-      color: "from-indigo-600 to-blue-700",
-    },
-  ]
+  const getLevelColor = (level: string) => {
+    switch (level) {
+      case 'beginner': return "from-blue-400 to-blue-500"
+      case 'elementary': return "from-blue-500 to-blue-600"
+      case 'intermediate': return "from-indigo-500 to-indigo-600"
+      default: return "from-blue-600 to-purple-600"
+    }
+  }
 
   if (!mounted) {
     return (
@@ -94,65 +89,74 @@ export function CoursesSection() {
           </motion.p>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mb-16">
-          {courses.map((course, index) => (
-            <motion.div
-              key={course.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1, duration: 0.5 }}
-            >
-              <Card className="flex flex-col h-full hover:shadow-2xl transition-all duration-500 dark:bg-gray-950 dark:border-gray-800 border-2 border-transparent hover:border-blue-500/20 group overflow-hidden">
-                <CardHeader className="relative">
-                  <div className={`absolute top-0 left-0 h-1.5 w-full bg-gradient-to-r ${course.color}`} />
-                  <div className="flex items-center justify-between mb-4 pt-2">
-                    <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border-none font-bold px-3 py-1">
-                      {course.level}
-                    </Badge>
-                    <span className="text-2xl font-black text-blue-700 dark:text-blue-400">{course.price}</span>
-                  </div>
-                  <CardTitle className="text-2xl font-bold dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                    {course.title}
-                  </CardTitle>
-                  <CardDescription className="text-base text-gray-700 dark:text-gray-300 font-medium leading-relaxed mt-2">
-                    {course.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1 pt-0">
-                  <div className="flex flex-col gap-4 mt-4">
-                    <div className="flex items-center gap-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      <div className="h-8 w-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
-                        <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+          </div>
+        ) : (
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mb-16">
+            {courses.map((course, index) => (
+              <motion.div
+                key={course.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1, duration: 0.5 }}
+              >
+                <Card className="flex flex-col h-full hover:shadow-2xl transition-all duration-500 dark:bg-gray-950 dark:border-gray-800 border-2 border-transparent hover:border-blue-500/20 group overflow-hidden">
+                  <CardHeader className="relative">
+                    <div className={`absolute top-0 left-0 h-1.5 w-full bg-gradient-to-r ${getLevelColor(course.level)}`} />
+                    <div className="flex items-center justify-between mb-4 pt-2">
+                      <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border-none font-bold px-3 py-1 uppercase">
+                        {course.level}
+                      </Badge>
+                      <div className="flex flex-col items-end">
+                        <span className="text-xl font-black text-blue-700 dark:text-blue-400">{(course.price_usd).toLocaleString()} ETB</span>
+                        <span className="text-[10px] text-gray-500 uppercase font-bold">/ Month</span>
                       </div>
-                      <span>{course.duration}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      <div className="h-8 w-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
-                        <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <CardTitle className="text-xl font-bold dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-1">
+                      {course.title[language] || course.title.en}
+                    </CardTitle>
+                    <CardDescription className="text-base text-gray-700 dark:text-gray-300 font-medium leading-relaxed mt-2 line-clamp-2">
+                      {course.short_description?.[language] || course.description?.[language] || course.description?.en}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-1 pt-0">
+                    <div className="flex flex-col gap-4 mt-4">
+                      <div className="flex items-center gap-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <div className="h-8 w-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                          <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <span>{course.duration_weeks} {t.weeks}</span>
                       </div>
-                      <span>{course.students} {t.enrolled}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      <div className="h-8 w-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
-                        <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <div className="flex items-center gap-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <div className="h-8 w-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                          <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <span>{t.maxStudents?.replace("{count}", course.max_students.toString()) || `Max ${course.max_students}`}</span>
                       </div>
-                      <span>4-5 {t.hoursPerWeek}</span>
+                      <div className="flex items-center gap-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <div className="h-8 w-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                          <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <span>{course.hours_per_week} {t.hoursPerWeek}</span>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="pt-6">
-                  <Button asChild className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-12 shadow-lg shadow-blue-600/20 group-hover:shadow-blue-600/30 transition-all">
-                    <Link href={`/courses/${course.id}`} className="flex items-center justify-center gap-2">
-                      {t.enrollNow}
-                      <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                    </Link>
-                  </Button>
-                </CardFooter>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
+                  </CardContent>
+                  <CardFooter className="pt-6">
+                    <Button asChild className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-12 shadow-lg shadow-blue-600/20 group-hover:shadow-blue-600/30 transition-all">
+                      <Link href={`/courses/${course.id}`} className="flex items-center justify-center gap-2">
+                        {t.enrollNow}
+                        <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                      </Link>
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        )}
 
         <div className="text-center">
           <motion.div
