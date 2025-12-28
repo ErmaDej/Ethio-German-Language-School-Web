@@ -23,20 +23,37 @@ export default function CoursesPage() {
 
   useEffect(() => {
     async function fetchCourses() {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("courses")
-        .select("*")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
+      try {
+        // Validate environment variables
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          console.error("Missing Supabase environment variables")
+          setLoading(false)
+          return
+        }
 
-      if (error) {
-        console.error("Error fetching courses:", error)
-      } else {
-        setCourses(data || [])
-        setFilteredCourses(data || [])
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from("courses")
+          .select("*")
+          .eq("is_active", true)
+          .order("created_at", { ascending: false })
+
+        if (error) {
+          console.error("Error fetching courses:", error)
+          // Set empty array on error to show empty state
+          setCourses([])
+          setFilteredCourses([])
+        } else {
+          setCourses(data || [])
+          setFilteredCourses(data || [])
+        }
+      } catch (err) {
+        console.error("Unexpected error fetching courses:", err)
+        setCourses([])
+        setFilteredCourses([])
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
 
     fetchCourses()

@@ -27,7 +27,7 @@ pulated with the restructured German-only data.
 ## Remaining (Prioritized)
 1. **Critical: Core Functional Flow**
    - Finalize Enrollment process.
-   - Implement Payment gateway integration (Stripe/PayPal).
+   - Implement Payment gateway integration (Chapa - Ethiopian payment gateway).
    - Complete Profile management.
 2. **Intermediate: Operations**
    - Google Calendar sync for scheduling.

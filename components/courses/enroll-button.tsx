@@ -46,18 +46,19 @@ export function EnrollButton({ scheduleId, availableSeats }: { scheduleId: strin
         return
       }
 
-      // Create enrollment
+      // Create enrollment (pending admin approval)
       const { error: enrollError } = await supabase.from("enrollments").insert({
         student_id: user.id,
         schedule_id: scheduleId,
         enrollment_status: "pending",
         payment_status: "pending",
+        admin_approved: false,
       })
 
       if (enrollError) throw enrollError
 
-      // Redirect to student dashboard
-      router.push("/student/enrollments")
+      // Redirect to student dashboard with success message
+      router.push("/student/enrollments?enrolled=pending")
     } catch (err) {
       console.error("Enrollment error:", err)
       setError(err instanceof Error ? err.message : t.failedToEnroll)

@@ -14,12 +14,13 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { User, ArrowLeft, Mail, Loader2, Users } from "lucide-react"
+import { User, ArrowLeft, Mail, Loader2, Users, Check, X } from "lucide-react"
 import Link from "next/link"
 import { format } from "date-fns"
 import { useLanguage } from "@/lib/hooks/use-language"
 import { translations } from "@/lib/i18n/translations"
 import { useParams } from "next/navigation"
+import { toast } from "sonner"
 
 export default function ScheduleEnrollmentsPage() {
     const params = useParams()
@@ -62,12 +63,73 @@ export default function ScheduleEnrollmentsPage() {
         switch (status) {
             case "confirmed":
                 return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-none"
+            case "admin_approved":
+                return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-none"
             case "pending":
                 return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-none"
             case "cancelled":
                 return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-none"
             default:
                 return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400 border-none"
+        }
+    }
+
+    const handleApproveEnrollment = async (enrollmentId: string) => {
+        const supabase = createClient()
+        
+        const { error } = await supabase
+            .from("enrollments")
+            .update({
+                admin_approved: true,
+                admin_approved_at: new Date().toISOString(),
+                enrollment_status: "admin_approved",
+                approved_by: (await supabase.auth.getUser()).data.user?.id,
+            })
+            .eq("id", enrollmentId)
+
+        if (error) {
+            toast.error("Failed to approve enrollment")
+            console.error(error)
+        } else {
+            toast.success("Enrollment approved successfully")
+            // Refresh data
+            const { data: enrollmentsData } = await supabase
+                .from("enrollments")
+                .select(`
+          *,
+          student:profiles(*)
+        `)
+                .eq("schedule_id", id)
+                .order("enrolled_at", { ascending: false })
+            setEnrollments(enrollmentsData || [])
+        }
+    }
+
+    const handleRejectEnrollment = async (enrollmentId: string) => {
+        const supabase = createClient()
+        
+        const { error } = await supabase
+            .from("enrollments")
+            .update({
+                enrollment_status: "cancelled",
+            })
+            .eq("id", enrollmentId)
+
+        if (error) {
+            toast.error("Failed to reject enrollment")
+            console.error(error)
+        } else {
+            toast.success("Enrollment rejected")
+            // Refresh data
+            const { data: enrollmentsData } = await supabase
+                .from("enrollments")
+                .select(`
+          *,
+          student:profiles(*)
+        `)
+                .eq("schedule_id", id)
+                .order("enrolled_at", { ascending: false })
+            setEnrollments(enrollmentsData || [])
         }
     }
 
@@ -147,6 +209,28 @@ export default function ScheduleEnrollmentsPage() {
                                                         <Mail className="h-4 w-4" />
                                                     </a>
                                                 </Button>
+                                                {!enrollment.admin_approved && enrollment.enrollment_status === "pending" && (
+                                                    <>
+                                                        <Button 
+                                                            size="sm" 
+                                                            variant="default" 
+                                                            className="h-8 bg-green-600 hover:bg-green-700 text-white"
+                                                            onClick={() => handleApproveEnrollment(enrollment.id)}
+                                                            title="Approve Enrollment"
+                                                        >
+                                                            <Check className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button 
+                                                            size="sm" 
+                                                            variant="destructive" 
+                                                            className="h-8"
+                                                            onClick={() => handleRejectEnrollment(enrollment.id)}
+                                                            title="Reject Enrollment"
+                                                        >
+                                                            <X className="h-4 w-4" />
+                                                        </Button>
+                                                    </>
+                                                )}
                                                 <Button asChild size="sm" variant="outline" className="h-8 dark:border-gray-700 dark:text-gray-300">
                                                     <Link href={`/admin/enrollments/${enrollment.id}`}>
                                                         {t.edit}

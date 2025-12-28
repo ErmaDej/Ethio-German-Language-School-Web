@@ -22,32 +22,54 @@ export default function CourseDetailPage() {
 
   useEffect(() => {
     async function fetchCourseData() {
-      const supabase = createClient()
+      try {
+        // Validate environment variables
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          console.error("Missing Supabase environment variables")
+          setLoading(false)
+          return
+        }
 
-      const { data: courseData, error: courseError } = await supabase
-        .from("courses")
-        .select("*")
-        .eq("id", id)
-        .single()
+        const supabase = createClient()
 
-      if (courseError || !courseData) {
+        const { data: courseData, error: courseError } = await supabase
+          .from("courses")
+          .select("*")
+          .eq("id", id)
+          .single()
+
+        if (courseError) {
+          console.error("Error fetching course:", courseError)
+          setLoading(false)
+          return
+        }
+
+        if (!courseData) {
+          setLoading(false)
+          return
+        }
+
+        const { data: schedulesData, error: schedulesError } = await supabase
+          .from("course_schedules")
+          .select(`
+            *,
+            instructor:profiles(full_name, avatar_url)
+          `)
+          .eq("course_id", id)
+          .in("status", ["upcoming", "ongoing"])
+          .order("start_date", { ascending: true })
+
+        if (schedulesError) {
+          console.error("Error fetching schedules:", schedulesError)
+        }
+
+        setCourse(courseData)
+        setSchedules(schedulesData || [])
+      } catch (err) {
+        console.error("Unexpected error fetching course data:", err)
+      } finally {
         setLoading(false)
-        return
       }
-
-      const { data: schedulesData } = await supabase
-        .from("course_schedules")
-        .select(`
-          *,
-          instructor:profiles(full_name, avatar_url)
-        `)
-        .eq("course_id", id)
-        .in("status", ["upcoming", "ongoing"])
-        .order("start_date", { ascending: true })
-
-      setCourse(courseData)
-      setSchedules(schedulesData || [])
-      setLoading(false)
     }
 
     if (id) {

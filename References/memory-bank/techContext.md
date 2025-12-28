@@ -26,6 +26,14 @@
 - **i18n**: Support for English, Amharic, and German.
 
 ## Integration Points
+- **Chapa Payment Gateway**: Active integration for Ethiopian payment processing (test mode).
 - **Google Calendar API**: Planned for scheduling sync.
 - **Zoom/Meet**: Planned for online classes.
 - **AI Assistant**: Planned for language support.
+
+## Payment Integration
+- **Gateway**: Chapa (Ethiopian payment gateway)
+- **Currency**: ETB (Ethiopian Birr)
+- **Flow**: Enroll first (pending) → Pay later → Auto-confirm on payment
+- **Webhooks**: Real-time payment status updates
+- **Auto-cancellation**: Unpaid enrollments cancelled after timeout period

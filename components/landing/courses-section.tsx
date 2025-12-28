@@ -22,18 +22,34 @@ export function CoursesSection() {
   useEffect(() => {
     setMounted(true)
     async function fetchFeaturedCourses() {
-      const supabase = createClient()
-      const { data } = await supabase
-        .from("courses")
-        .select("*")
-        .eq("is_active", true)
-        .order("level", { ascending: true }) // Show beginner levels first on landing page
-        .limit(3)
+      try {
+        // Validate environment variables
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          console.error("Missing Supabase environment variables")
+          setLoading(false)
+          return
+        }
 
-      if (data) {
-        setCourses(data)
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from("courses")
+          .select("*")
+          .eq("is_active", true)
+          .order("level", { ascending: true }) // Show beginner levels first on landing page
+          .limit(3)
+
+        if (error) {
+          console.error("Error fetching featured courses:", error)
+          setCourses([])
+        } else {
+          setCourses(data || [])
+        }
+      } catch (err) {
+        console.error("Unexpected error fetching featured courses:", err)
+        setCourses([])
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
     fetchFeaturedCourses()
   }, [])

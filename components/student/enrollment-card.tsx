@@ -9,6 +9,8 @@ import { format } from "date-fns"
 import { useLanguage } from "@/lib/hooks/use-language"
 import { translations } from "@/lib/i18n/translations"
 import { motion } from "framer-motion"
+import { PaymentStatus } from "@/components/payments/payment-status"
+import { PendingApprovalNotification } from "@/components/enrollments/pending-approval-notification"
 
 export function EnrollmentCard({ enrollment }: { enrollment: any }) {
   const { language } = useLanguage()
@@ -96,6 +98,23 @@ export function EnrollmentCard({ enrollment }: { enrollment: any }) {
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t.instructor}</p>
                 <p className="text-sm font-bold dark:text-white">{enrollment.schedule.instructor.full_name}</p>
               </div>
+            </div>
+          )}
+
+          {/* Pending Approval Notification */}
+          {(!enrollment.admin_approved || enrollment.enrollment_status === "pending") && (
+            <div className="pt-4 border-t dark:border-gray-800">
+              <PendingApprovalNotification enrollment={enrollment} />
+            </div>
+          )}
+
+          {/* Payment Status Section - Only show if admin approved */}
+          {enrollment.admin_approved === true && 
+           (enrollment.payment_status === "pending" || 
+            enrollment.payment_status === "failed" || 
+            enrollment.enrollment_status === "admin_approved") && (
+            <div className="pt-4 border-t dark:border-gray-800">
+              <PaymentStatus enrollment={enrollment} showButton={true} />
             </div>
           )}
         </CardContent>
