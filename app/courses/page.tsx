@@ -41,11 +41,21 @@ export default function CoursesPage() {
         console.log("Fetching courses from Supabase...")
         const supabase = createClient()
         
-        const { data, error, status, statusText } = await supabase
+        // Add timeout wrapper
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => {
+            reject(new Error("Request timeout: Supabase query took longer than 15 seconds"))
+          }, 15000)
+        })
+        
+        const queryPromise = supabase
           .from("courses")
           .select("*")
           .eq("is_active", true)
           .order("created_at", { ascending: false })
+
+        const result = await Promise.race([queryPromise, timeoutPromise]) as any
+        const { data, error, status, statusText } = result || {}
 
         console.log("Supabase response:", {
           dataCount: data?.length || 0,
@@ -57,7 +67,23 @@ export default function CoursesPage() {
           } : null,
           status,
           statusText,
+          hasData: !!data,
         })
+
+        if (error) {
+          console.error("Error fetching courses:", {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code,
+          })
+          setCourses([])
+          setFilteredCourses([])
+        } else {
+          console.log(`Successfully loaded ${data?.length || 0} courses`)
+          setCourses(data || [])
+          setFilteredCourses(data || [])
+        }
 
         if (error) {
           console.error("Error fetching courses:", {

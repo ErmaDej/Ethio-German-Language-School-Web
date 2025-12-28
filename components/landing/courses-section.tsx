@@ -34,12 +34,23 @@ export function CoursesSection() {
         }
 
         const supabase = createClient()
-        const { data, error, status } = await supabase
+        
+        // Add timeout wrapper
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => {
+            reject(new Error("Request timeout: Supabase query took longer than 15 seconds"))
+          }, 15000)
+        })
+        
+        const queryPromise = supabase
           .from("courses")
           .select("*")
           .eq("is_active", true)
           .order("level", { ascending: true }) // Show beginner levels first on landing page
           .limit(3)
+
+        const result = await Promise.race([queryPromise, timeoutPromise]) as any
+        const { data, error, status } = result || {}
 
         if (error) {
           console.error("Error fetching featured courses:", {
