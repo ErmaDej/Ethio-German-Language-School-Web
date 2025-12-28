@@ -25,30 +25,63 @@ export default function CoursesPage() {
     async function fetchCourses() {
       try {
         // Validate environment variables
-        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-          console.error("Missing Supabase environment variables")
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        
+        if (!supabaseUrl || !supabaseKey) {
+          console.error("Missing Supabase environment variables:", {
+            hasUrl: !!supabaseUrl,
+            hasKey: !!supabaseKey,
+            url: supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : 'missing',
+          })
           setLoading(false)
           return
         }
 
+        console.log("Fetching courses from Supabase...")
         const supabase = createClient()
-        const { data, error } = await supabase
+        
+        const { data, error, status, statusText } = await supabase
           .from("courses")
           .select("*")
           .eq("is_active", true)
           .order("created_at", { ascending: false })
 
+        console.log("Supabase response:", {
+          dataCount: data?.length || 0,
+          error: error ? {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code,
+          } : null,
+          status,
+          statusText,
+        })
+
         if (error) {
-          console.error("Error fetching courses:", error)
+          console.error("Error fetching courses:", {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code,
+          })
           // Set empty array on error to show empty state
           setCourses([])
           setFilteredCourses([])
         } else {
+          console.log(`Successfully loaded ${data?.length || 0} courses`)
           setCourses(data || [])
           setFilteredCourses(data || [])
         }
       } catch (err) {
         console.error("Unexpected error fetching courses:", err)
+        if (err instanceof Error) {
+          console.error("Error details:", {
+            message: err.message,
+            stack: err.stack,
+          })
+        }
         setCourses([])
         setFilteredCourses([])
       } finally {

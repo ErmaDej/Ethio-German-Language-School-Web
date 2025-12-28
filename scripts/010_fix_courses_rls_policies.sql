@@ -21,12 +21,13 @@ ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Anyone can view active courses" ON public.courses;
 DROP POLICY IF EXISTS "Public can view active courses" ON public.courses;
 DROP POLICY IF EXISTS "Anonymous users can view active courses" ON public.courses;
+DROP POLICY IF EXISTS "Enable read access for all users" ON public.courses;
 
 -- Create a policy that explicitly allows anonymous/public access to active courses
--- This policy works for both authenticated and anonymous users
-CREATE POLICY "Public can view active courses"
+-- Using 'anon' and 'authenticated' roles explicitly ensures anonymous users can access
+CREATE POLICY "Enable read access for all users"
   ON public.courses FOR SELECT
-  TO public
+  TO anon, authenticated
   USING (is_active = true);
 
 -- Verify the policy allows anonymous access

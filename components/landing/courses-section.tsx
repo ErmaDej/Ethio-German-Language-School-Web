@@ -24,14 +24,17 @@ export function CoursesSection() {
     async function fetchFeaturedCourses() {
       try {
         // Validate environment variables
-        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-          console.error("Missing Supabase environment variables")
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        
+        if (!supabaseUrl || !supabaseKey) {
+          console.error("Missing Supabase environment variables in courses section")
           setLoading(false)
           return
         }
 
         const supabase = createClient()
-        const { data, error } = await supabase
+        const { data, error, status } = await supabase
           .from("courses")
           .select("*")
           .eq("is_active", true)
@@ -39,7 +42,13 @@ export function CoursesSection() {
           .limit(3)
 
         if (error) {
-          console.error("Error fetching featured courses:", error)
+          console.error("Error fetching featured courses:", {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code,
+            status,
+          })
           setCourses([])
         } else {
           setCourses(data || [])
